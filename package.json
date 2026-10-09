@@ -1,0 +1,67 @@
+{
+  "name": "react-microtrend",
+  "version": "1.0.0",
+  "description": "Ultra-lightweight, zero-dependency, modern SVG sparklines and micro-trend charts for React and TypeScript.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "demo": "vite playground --config playground/vite.config.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hsnacar/react-microtrend.git"
+  },
+  "keywords": [
+    "react",
+    "react-sparklines",
+    "sparklines",
+    "sparkline",
+    "trendline",
+    "micro-charts",
+    "charts",
+    "svg",
+    "dashboard",
+    "kpi",
+    "crypto",
+    "finance",
+    "zero-dependency",
+    "typescript"
+  ],
+  "author": "Hasan Acar <hasanacar.eng@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hsnacar/react-microtrend/issues"
+  },
+  "homepage": "https://github.com/hsnacar/react-microtrend#readme",
+  "peerDependencies": {
+    "react": ">=16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": ">=16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^6.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
+    "vite": "^8.3.4"
+  }
+}
