@@ -2,22 +2,19 @@ import * as React from 'react';
 
 let idCounter = 0;
 
+const hasNativeUseId = typeof (React as unknown as { useId?: () => string }).useId === 'function';
+
 /**
  * Generates an SSR-safe unique ID across React 16.8, 17, 18, and 19.
- * Does not violate React Hook rules.
+ * Strategy is resolved at module initialization, ensuring strict compliance
+ * with the React Rules of Hooks across all environments.
  */
-export function useSafeId(prefix = 'mt'): string {
-  // Check React.useId without breaking Rules of Hooks
-  const reactUseId = (React as unknown as { useId?: () => string }).useId;
-
-  if (typeof reactUseId === 'function') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const id = reactUseId();
-    return `${prefix}-${id.replace(/:/g, '')}`;
-  }
-
-  // React 16 / 17 fallback: static instance state
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [fallbackId] = React.useState(() => `${prefix}-${++idCounter}`);
-  return fallbackId;
-}
+export const useSafeId: (prefix?: string) => string = hasNativeUseId
+  ? (prefix = 'mt') => {
+      const id = (React as unknown as { useId: () => string }).useId();
+      return `${prefix}-${id.replace(/:/g, '')}`;
+    }
+  : (prefix = 'mt') => {
+      const [fallbackId] = React.useState(() => `${prefix}-${++idCounter}`);
+      return fallbackId;
+    };

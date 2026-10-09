@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { StrictMode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
-import { MicroTrend } from '../src';
+import { MicroTrend, Line, Area, Spot, ReferenceLine, Tooltip, Bars } from '../src';
 
 describe('<MicroTrend />', () => {
   it('renders svg with specified width and height', () => {
@@ -11,6 +11,37 @@ describe('<MicroTrend />', () => {
     expect(svg).toHaveAttribute('width', '200');
     expect(svg).toHaveAttribute('height', '60');
     expect(svg).toHaveAttribute('viewBox', '0 0 200 60');
+  });
+
+  it('renders without error under React.StrictMode', () => {
+    expect(() => {
+      render(
+        <StrictMode>
+          <MicroTrend data={[10, 20, 30]} color="#10b981" fill showSpot="last" />
+        </StrictMode>
+      );
+    }).not.toThrow();
+  });
+
+  it('handles empty data array safely without throwing', () => {
+    const { container } = render(<MicroTrend data={[]} />);
+    const svg = container.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+    expect(container.querySelector('path')).not.toBeInTheDocument();
+  });
+
+  it('handles single item data safely', () => {
+    const { container } = render(<MicroTrend data={[50]} showSpot="last" />);
+    expect(container.querySelector('svg')).toBeInTheDocument();
+    expect(container.querySelector('circle')).toBeInTheDocument();
+  });
+
+  it('handles flat trend with identical values', () => {
+    const { container } = render(<MicroTrend data={[30, 30, 30]} width={100} height={40} />);
+    const path = container.querySelector('path');
+    expect(path).toBeInTheDocument();
+    // Y coordinates should all be 20 (middle of height 40)
+    expect(path?.getAttribute('d')).toContain('20');
   });
 
   it('renders line with shortcut props', () => {
@@ -27,9 +58,7 @@ describe('<MicroTrend />', () => {
     const { container } = render(
       <MicroTrend data={[10, 20, 15]} color="#3b82f6" fill showSpot="last" />
     );
-    // Area generates linearGradient and a fill path
     expect(container.querySelector('linearGradient')).toBeInTheDocument();
-    // Spot generates circle
     const circles = container.querySelectorAll('circle');
     expect(circles.length).toBeGreaterThan(0);
   });
@@ -79,6 +108,9 @@ describe('<MicroTrend />', () => {
 
     const svg = container.querySelector('svg')!;
     
+    // Check touchAction is set to 'none' for smooth mobile interaction
+    expect(svg.style.touchAction).toBe('none');
+
     // Simulate pointer move over SVG
     fireEvent.pointerMove(svg, {
       clientX: 150,
@@ -96,6 +128,26 @@ describe('<MicroTrend />', () => {
     expect(onHover).toHaveBeenCalledWith(null);
   });
 
+  it('responds to pointerDown for mobile touch interaction', () => {
+    const onHover = vi.fn();
+    const { container } = render(
+      <MicroTrend data={[10, 20, 30]} width={300} height={100} interactive onHover={onHover}>
+        <MicroTrend.Line />
+        <MicroTrend.Tooltip />
+      </MicroTrend>
+    );
+
+    const svg = container.querySelector('svg')!;
+    fireEvent.pointerDown(svg, {
+      clientX: 290,
+      currentTarget: {
+        getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 100 }),
+      },
+    });
+
+    expect(onHover).toHaveBeenCalledWith(expect.objectContaining({ value: 30 }));
+  });
+
   it('handles negative bars with zero-crossing baseline', () => {
     const { container } = render(
       <MicroTrend
@@ -110,9 +162,27 @@ describe('<MicroTrend />', () => {
 
     const rects = container.querySelectorAll('rect');
     expect(rects).toHaveLength(3);
-    // Positive bar
     expect(rects[0]).toHaveAttribute('fill', '#10b981');
-    // Negative bar
     expect(rects[1]).toHaveAttribute('fill', '#f43f5e');
+  });
+
+  it('throws descriptive error when subcomponents are rendered outside parent', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onWindowError = (e: ErrorEvent) => e.preventDefault();
+    window.addEventListener('error', onWindowError);
+
+    try {
+      expect(() => render(<Line />)).toThrow(
+        'MicroTrend subcomponents must be used within a <MicroTrend> parent component.'
+      );
+      expect(() => render(<Area />)).toThrow();
+      expect(() => render(<Bars />)).toThrow();
+      expect(() => render(<Spot />)).toThrow();
+      expect(() => render(<ReferenceLine />)).toThrow();
+      expect(() => render(<Tooltip />)).toThrow();
+    } finally {
+      window.removeEventListener('error', onWindowError);
+      consoleError.mockRestore();
+    }
   });
 });

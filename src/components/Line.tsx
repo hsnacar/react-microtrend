@@ -13,8 +13,9 @@ export const Line: React.FC<LineProps> = ({
   className,
   style,
 }) => {
-  const { points } = useMicroTrendContext();
-  const d = createLinePath(points, smooth);
+  const { points, height, margin } = useMicroTrendContext();
+  const bounds = { minY: margin.top, maxY: height - margin.bottom };
+  const d = createLinePath(points, smooth, bounds);
 
   if (!d) return null;
 

@@ -126,8 +126,10 @@ export const MicroTrendComponent: React.FC<MicroTrendProps> = ({
           display: 'inline-block',
           verticalAlign: 'middle',
           overflow: 'visible',
+          touchAction: isInteractive ? 'none' : 'auto',
           ...style,
         }}
+        onPointerDown={isInteractive ? handlePointerMove : undefined}
         onPointerMove={isInteractive ? handlePointerMove : undefined}
         onPointerLeave={isInteractive ? handlePointerLeave : undefined}
         {...svgProps}
