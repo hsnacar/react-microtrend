@@ -12,7 +12,7 @@ export const ReferenceLine: React.FC<ReferenceLineProps> = ({
   className,
   style,
 }) => {
-  const { min, max, avg, width, height, margin } = useMicroTrendContext();
+  const { min, max, avg, values, width, height, margin } = useMicroTrendContext();
 
   let targetValue = avg;
   if (customValue !== undefined) {
@@ -23,13 +23,28 @@ export const ReferenceLine: React.FC<ReferenceLineProps> = ({
     targetValue = max;
   } else if (type === 'zero') {
     targetValue = 0;
+  } else if (type === 'median') {
+    if (values.length > 0) {
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      targetValue = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
   }
 
   const innerHeight = Math.max(height - margin.top - margin.bottom, 1);
   const range = max === min ? 1 : max - min;
-  const y = margin.top + innerHeight - ((targetValue - min) / range) * innerHeight;
+  const rawY = max === min
+    ? margin.top + innerHeight / 2
+    : margin.top + innerHeight - ((targetValue - min) / range) * innerHeight;
 
-  if (y < margin.top || y > height - margin.bottom) return null;
+  // Floating point boundary tolerance (e.g. 0.001 delta)
+  const minY = margin.top;
+  const maxY = height - margin.bottom;
+
+  if (rawY < minY - 1 || rawY > maxY + 1) return null;
+
+  // Clamp within margin bounds
+  const y = Math.max(minY, Math.min(maxY, Number(rawY.toFixed(2))));
 
   const x1 = margin.left;
   const x2 = width - margin.right;
@@ -52,7 +67,7 @@ export const ReferenceLine: React.FC<ReferenceLineProps> = ({
           textAnchor="end"
           fill={color}
           fontSize="9"
-          fontFamily="sans-serif"
+          fontFamily="system-ui, -apple-system, sans-serif"
         >
           {label}
         </text>

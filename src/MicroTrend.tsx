@@ -1,6 +1,7 @@
-import React, { useState, useId, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { MicroTrendProps, Point, SpotType } from './types';
 import { parseMargin, computePoints } from './utils/math';
+import { useSafeId } from './utils/useSafeId';
 import { MicroTrendContext } from './MicroTrendContext';
 import { Line } from './components/Line';
 import { Area } from './components/Area';
@@ -8,8 +9,6 @@ import { Bars } from './components/Bars';
 import { Spot } from './components/Spot';
 import { ReferenceLine } from './components/ReferenceLine';
 import { Tooltip } from './components/Tooltip';
-
-let fallbackCounter = 0;
 
 export const MicroTrendComponent: React.FC<MicroTrendProps> = ({
   data = [],
@@ -32,20 +31,13 @@ export const MicroTrendComponent: React.FC<MicroTrendProps> = ({
   spotSize = 3,
   interactive = false,
   onHover,
+  preserveAspectRatio = 'none',
   className,
   style,
   ...svgProps
 }) => {
   const [hoveredPoint, setHoveredPointState] = useState<Point | null>(null);
-
-  // Safe unique ID for SVG masks and linear gradients
-  let reactId = '';
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    reactId = useId ? useId().replace(/:/g, '') : `mt-${++fallbackCounter}`;
-  } catch {
-    reactId = `mt-${++fallbackCounter}`;
-  }
+  const reactId = useSafeId('mt');
 
   const margin = useMemo(() => parseMargin(rawMargin), [rawMargin]);
 
@@ -110,7 +102,17 @@ export const MicroTrendComponent: React.FC<MicroTrendProps> = ({
     [points, values, min, max, avg, width, height, margin, hoveredPoint, setHoveredPoint, reactId]
   );
 
-  const isInteractive = interactive || Boolean(children && onHover);
+  // Automatically enable interaction if Tooltip is present in children or onHover is passed
+  const hasTooltipChild = useMemo(() => {
+    if (!children) return false;
+    return React.Children.toArray(children).some(
+      (child) =>
+        React.isValidElement(child) &&
+        (child.type === Tooltip || (child.type as any)?.displayName === 'MicroTrend.Tooltip')
+    );
+  }, [children]);
+
+  const isInteractive = interactive || Boolean(onHover) || hasTooltipChild;
 
   return (
     <MicroTrendContext.Provider value={contextValue}>
@@ -118,6 +120,7 @@ export const MicroTrendComponent: React.FC<MicroTrendProps> = ({
         viewBox={`0 0 ${width} ${height}`}
         width={width}
         height={height}
+        preserveAspectRatio={preserveAspectRatio}
         className={className}
         style={{
           display: 'inline-block',

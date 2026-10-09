@@ -13,7 +13,17 @@ export function parseMargin(margin?: number | Partial<Margin>): Margin {
 }
 
 export function extractNumericValues(data: RawDataPoint[]): number[] {
-  return data.map((d) => (typeof d === 'number' ? d : d.value ?? 0));
+  if (!Array.isArray(data)) return [];
+  return data.map((d) => {
+    if (typeof d === 'number') {
+      return Number.isFinite(d) ? d : 0;
+    }
+    if (d && typeof d === 'object') {
+      const val = Number(d.value);
+      return Number.isFinite(val) ? val : 0;
+    }
+    return 0;
+  });
 }
 
 export function computePoints(
@@ -29,22 +39,35 @@ export function computePoints(
     return { points: [], values: [], min: 0, max: 0, avg: 0 };
   }
 
-  const dataMin = Math.min(...values);
-  const dataMax = Math.max(...values);
-  const sum = values.reduce((acc, val) => acc + val, 0);
-  const avg = sum / values.length;
+  // Single-pass O(N) calculation to prevent RangeError with large datasets
+  let dataMin = values[0];
+  let dataMax = values[0];
+  let sum = 0;
 
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v < dataMin) dataMin = v;
+    if (v > dataMax) dataMax = v;
+    sum += v;
+  }
+
+  const avg = sum / values.length;
   const min = customMin !== undefined ? customMin : dataMin;
   const max = customMax !== undefined ? customMax : dataMax;
 
   const innerWidth = Math.max(width - margin.left - margin.right, 1);
   const innerHeight = Math.max(height - margin.top - margin.bottom, 1);
-  const range = max === min ? 1 : max - min;
+  const isFlat = max === min;
+  const range = isFlat ? 1 : max - min;
   const count = values.length;
 
   const points: Point[] = values.map((val, i) => {
     const x = count <= 1 ? margin.left + innerWidth / 2 : margin.left + (i / (count - 1)) * innerWidth;
-    const y = margin.top + innerHeight - ((val - min) / range) * innerHeight;
+    // If all values are equal (flat trend), center vertically instead of dropping to the bottom
+    const y = isFlat
+      ? margin.top + innerHeight / 2
+      : margin.top + innerHeight - ((val - min) / range) * innerHeight;
+
     return {
       x: Number(x.toFixed(2)),
       y: Number(y.toFixed(2)),
@@ -59,7 +82,7 @@ export function computePoints(
 
 /**
  * Creates an SVG path string from points.
- * If smooth is true, it interpolates with cubic Bezier curves (Catmull-Rom approach).
+ * Uses Catmull-Rom to Cubic Bezier spline interpolation with tangent scaling.
  */
 export function createLinePath(points: Point[], smooth = true): string {
   if (points.length === 0) return '';

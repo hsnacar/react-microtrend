@@ -11,15 +11,31 @@ export const Tooltip: React.FC<TooltipProps> = ({
   crosshairDasharray = '2 2',
   className,
 }) => {
-  const { hoveredPoint, height, margin } = useMicroTrendContext();
+  const { hoveredPoint, width, height, margin } = useMicroTrendContext();
 
   if (!hoveredPoint) return null;
 
   const formattedValue = format
-    ? format(hoveredPoint.value, hoveredPoint)
+    ? String(format(hoveredPoint.value, hoveredPoint))
     : hoveredPoint.value.toLocaleString();
 
   const bottom = height - margin.bottom;
+
+  // Dynamic pill size calculation to prevent text clipping
+  const pillWidth = Math.max(44, Math.round(formattedValue.length * 7 + 14));
+  const pillHeight = 18;
+
+  // Flip below point if too close to the top margin
+  const isNearTop = hoveredPoint.y < margin.top + 24;
+  const pillY = isNearTop
+    ? hoveredPoint.y + 8
+    : Math.max(margin.top, hoveredPoint.y - pillHeight - 6);
+
+  // Clamp pill horizontally so it never overflows SVG bounds
+  const pillX = Math.max(
+    margin.left,
+    Math.min(width - margin.right - pillWidth, hoveredPoint.x - pillWidth / 2)
+  );
 
   return (
     <g className={className} pointerEvents="none">
@@ -47,32 +63,32 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
       {render ? (
         <foreignObject
-          x={Math.max(0, hoveredPoint.x - 40)}
-          y={Math.max(0, hoveredPoint.y - 35)}
-          width={80}
-          height={30}
+          x={pillX}
+          y={pillY}
+          width={pillWidth}
+          height={pillHeight + 10}
         >
           {render(hoveredPoint)}
         </foreignObject>
       ) : (
         <g>
-          {/* Default SVG tooltip pill */}
+          {/* Responsive SVG tooltip pill */}
           <rect
-            x={Math.max(2, hoveredPoint.x - 24)}
-            y={Math.max(2, hoveredPoint.y - 20)}
-            width={48}
-            height={16}
+            x={pillX}
+            y={pillY}
+            width={pillWidth}
+            height={pillHeight}
             rx={4}
             ry={4}
             fill="#0f172a"
-            opacity={0.9}
+            opacity={0.92}
           />
           <text
-            x={Math.max(2, hoveredPoint.x)}
-            y={Math.max(2, hoveredPoint.y - 8)}
+            x={pillX + pillWidth / 2}
+            y={pillY + 12}
             textAnchor="middle"
             fill="#ffffff"
-            fontSize="9"
+            fontSize="10"
             fontWeight="600"
             fontFamily="system-ui, -apple-system, sans-serif"
           >

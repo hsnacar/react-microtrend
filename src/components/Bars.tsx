@@ -12,21 +12,42 @@ export const Bars: React.FC<BarsProps> = ({
   className,
   style,
 }) => {
-  const { points, height, width, margin } = useMicroTrendContext();
+  const { points, height, width, margin, min, max } = useMicroTrendContext();
 
   if (points.length === 0) return null;
 
   const innerWidth = width - margin.left - margin.right;
+  const innerHeight = Math.max(height - margin.top - margin.bottom, 1);
   const count = points.length;
   const computedBarWidth = barWidth ?? Math.max(1, (innerWidth - (count - 1) * gap) / count);
   const bottom = height - margin.bottom;
 
+  // Calculate zero baseline if data crosses zero
+  const range = max === min ? 1 : max - min;
+  const hasZeroCross = min < 0 && max > 0;
+  const zeroY = hasZeroCross
+    ? margin.top + innerHeight - ((0 - min) / range) * innerHeight
+    : bottom;
+
   return (
     <g className={className} style={style}>
       {points.map((p, idx) => {
-        const barHeight = Math.max(1, bottom - p.y);
         const x = margin.left + idx * (computedBarWidth + gap);
-        const y = p.y;
+        let y = p.y;
+        let barHeight = 1;
+
+        if (hasZeroCross) {
+          if (p.value >= 0) {
+            y = p.y;
+            barHeight = Math.max(1, zeroY - p.y);
+          } else {
+            y = zeroY;
+            barHeight = Math.max(1, p.y - zeroY);
+          }
+        } else {
+          y = p.y;
+          barHeight = Math.max(1, bottom - p.y);
+        }
 
         let fill = color;
         if (positiveColor && p.value >= 0) fill = positiveColor;
@@ -35,10 +56,10 @@ export const Bars: React.FC<BarsProps> = ({
         return (
           <rect
             key={idx}
-            x={x}
-            y={y}
-            width={computedBarWidth}
-            height={barHeight}
+            x={Number(x.toFixed(2))}
+            y={Number(y.toFixed(2))}
+            width={Number(computedBarWidth.toFixed(2))}
+            height={Number(barHeight.toFixed(2))}
             rx={radius}
             ry={radius}
             fill={fill}
