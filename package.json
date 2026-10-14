@@ -1,6 +1,6 @@
 {
   "name": "react-microtrend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ultra-lightweight, zero-dependency, modern SVG sparklines and micro-trend charts for React and TypeScript.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -24,7 +24,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "vite playground --config playground/vite.config.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run type-check && npm run test && npm run build"
   },
   "repository": {
     "type": "git",

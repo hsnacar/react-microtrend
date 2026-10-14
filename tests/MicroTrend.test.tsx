@@ -185,4 +185,80 @@ describe('<MicroTrend />', () => {
       consoleError.mockRestore();
     }
   });
+
+  describe('Regression Bug Fixes (BUG-01 to BUG-06)', () => {
+    it('BUG-01: renders Spot type all with large dataset without RangeError stack overflow', () => {
+      const largeData = Array.from({ length: 20000 }, () => 1);
+      expect(() => {
+        render(
+          <MicroTrend data={largeData} width={500} height={100}>
+            <MicroTrend.Spot type="all" />
+          </MicroTrend>
+        );
+      }).not.toThrow();
+    });
+
+    it('BUG-03: warns when Spot numeric index is out of bounds', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const { container } = render(
+          <MicroTrend data={[10, 20, 30]}>
+            <MicroTrend.Spot type={99} />
+          </MicroTrend>
+        );
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Spot: type=99 is out of bounds. Valid range: 0-2')
+        );
+        expect(container.querySelectorAll('circle')).toHaveLength(0);
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    it('BUG-04: does not render ReferenceLine with type median when values array is empty', () => {
+      const { container } = render(
+        <MicroTrend data={[]}>
+          <MicroTrend.ReferenceLine type="median" />
+        </MicroTrend>
+      );
+      expect(container.querySelector('line')).toBeNull();
+    });
+
+    it('BUG-05: falls back to toLocaleString when Tooltip format returns null or undefined', () => {
+      const { container } = render(
+        <MicroTrend data={[100, 200]} width={200} height={60} interactive>
+          <MicroTrend.Tooltip format={() => null} />
+        </MicroTrend>
+      );
+      const svg = container.querySelector('svg')!;
+      fireEvent.pointerMove(svg, {
+        clientX: 10,
+        currentTarget: {
+          getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 60 }),
+        },
+      });
+      const text = container.querySelector('text');
+      expect(text).not.toBeNull();
+      expect(text?.textContent).not.toBe('null');
+      expect(text?.textContent).toBe((100).toLocaleString());
+    });
+
+    it('BUG-06: places zero baseline at top when all data is negative in Bars', () => {
+      const { container } = render(
+        <MicroTrend data={[-5, -3, -1]} width={100} height={50} margin={0}>
+          <MicroTrend.Bars />
+        </MicroTrend>
+      );
+      const rects = container.querySelectorAll('rect');
+      expect(rects).toHaveLength(3);
+      // All rects should align at zero baseline y = margin.top = 0
+      expect(rects[0]).toHaveAttribute('y', '0');
+      expect(rects[1]).toHaveAttribute('y', '0');
+      expect(rects[2]).toHaveAttribute('y', '0');
+      // Most negative (-5) should have the largest height (full height 50)
+      expect(Number(rects[0].getAttribute('height'))).toBe(50);
+      // Least negative (-1) should have height 1
+      expect(Number(rects[2].getAttribute('height'))).toBe(1);
+    });
+  });
 });

@@ -19,7 +19,11 @@ export const Spot: React.FC<SpotProps> = ({
   const targetPoints: Point[] = [];
 
   if (typeof type === 'number') {
-    if (points[type]) targetPoints.push(points[type]);
+    if (type < 0 || type >= points.length || !Number.isInteger(type)) {
+      console.warn(`Spot: type=${type} is out of bounds. Valid range: 0-${points.length - 1}`);
+    } else if (points[type]) {
+      targetPoints.push(points[type]);
+    }
   } else {
     switch (type) {
       case 'first':
@@ -39,7 +43,9 @@ export const Spot: React.FC<SpotProps> = ({
         break;
       }
       case 'all':
-        targetPoints.push(...points);
+        for (let i = 0; i < points.length; i++) {
+          targetPoints.push(points[i]);
+        }
         break;
     }
   }

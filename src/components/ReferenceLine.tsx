@@ -24,11 +24,10 @@ export const ReferenceLine: React.FC<ReferenceLineProps> = ({
   } else if (type === 'zero') {
     targetValue = 0;
   } else if (type === 'median') {
-    if (values.length > 0) {
-      const sorted = [...values].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      targetValue = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-    }
+    if (values.length === 0) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    targetValue = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
   const innerHeight = Math.max(height - margin.top - margin.bottom, 1);

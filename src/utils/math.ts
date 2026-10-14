@@ -55,6 +55,10 @@ export function computePoints(
   const min = customMin !== undefined ? customMin : dataMin;
   const max = customMax !== undefined ? customMax : dataMax;
 
+  if (min > max) {
+    return { points: [], values: [], min: 0, max: 0, avg: 0 };
+  }
+
   const innerWidth = Math.max(width - margin.left - margin.right, 1);
   const innerHeight = Math.max(height - margin.top - margin.bottom, 1);
   const isFlat = max === min;

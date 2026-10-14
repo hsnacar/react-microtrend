@@ -22,12 +22,15 @@ export const Bars: React.FC<BarsProps> = ({
   const computedBarWidth = barWidth ?? Math.max(1, (innerWidth - (count - 1) * gap) / count);
   const bottom = height - margin.bottom;
 
-  // Calculate zero baseline if data crosses zero
+  // Calculate zero baseline if data crosses zero or is entirely negative
   const range = max === min ? 1 : max - min;
-  const hasZeroCross = min < 0 && max > 0;
-  const zeroY = hasZeroCross
-    ? margin.top + innerHeight - ((0 - min) / range) * innerHeight
-    : bottom;
+  const isAllNegative = max <= 0;
+  const hasZeroCross = (min < 0 && max >= 0) || isAllNegative;
+  const zeroY = isAllNegative
+    ? margin.top
+    : hasZeroCross
+      ? margin.top + innerHeight - ((0 - min) / range) * innerHeight
+      : bottom;
 
   return (
     <g className={className} style={style}>

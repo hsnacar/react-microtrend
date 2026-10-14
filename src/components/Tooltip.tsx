@@ -16,7 +16,11 @@ export const Tooltip: React.FC<TooltipProps> = ({
   if (!hoveredPoint) return null;
 
   const formattedValue = format
-    ? String(format(hoveredPoint.value, hoveredPoint))
+    ? (() => {
+        const result = format(hoveredPoint.value, hoveredPoint);
+        if (result == null || result === '') return hoveredPoint.value.toLocaleString();
+        return String(result);
+      })()
     : hoveredPoint.value.toLocaleString();
 
   const bottom = height - margin.bottom;

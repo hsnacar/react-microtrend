@@ -156,4 +156,16 @@ describe('math utilities', () => {
       expect(path).toContain(`L 90 ${expectedBottom} L 10 ${expectedBottom} Z`);
     });
   });
+
+  describe('BUG-02: customMin > customMax handling', () => {
+    it('returns empty dataset when customMin > customMax', () => {
+      const margin = { top: 4, right: 4, bottom: 4, left: 4 };
+      const result = computePoints([1, 2, 3], 100, 50, margin, 100, 0);
+      expect(result.points).toEqual([]);
+      expect(result.values).toEqual([]);
+      expect(result.min).toBe(0);
+      expect(result.max).toBe(0);
+      expect(result.avg).toBe(0);
+    });
+  });
 });
