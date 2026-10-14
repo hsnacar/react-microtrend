@@ -34,3 +34,8 @@ pnpm-debug.log*
 
 # Vitest / Coverage
 coverage/
+
+# AI / Internal
+AGENT_MAP.md
+bugs/
+
